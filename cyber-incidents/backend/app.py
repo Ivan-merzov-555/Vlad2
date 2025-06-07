@@ -5,11 +5,13 @@ from functools import wraps
 
 app = Flask(__name__)
 
-# Файлы для хранения данных
+from flask_cors import CORS
+
+CORS(app, supports_credentials=True)  
+
 USERS_FILE = 'users.csv'
 INCIDENTS_FILE = 'incidents.csv'
 
-# Инициализация файлов, если они не существуют
 def init_files():
     if not os.path.exists(USERS_FILE):
         with open(USERS_FILE, 'w', newline='') as f:
@@ -23,7 +25,6 @@ def init_files():
 
 init_files()
 
-# Простая проверка авторизации
 def check_auth(username, password):
     with open(USERS_FILE, 'r') as f:
         reader = csv.DictReader(f)
@@ -32,7 +33,6 @@ def check_auth(username, password):
                 return True
     return False
 
-# Декоратор для проверки авторизации
 def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -42,7 +42,6 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated
 
-# Регистрация нового пользователя
 @app.route('/register', methods=['POST'])
 def register():
     try:
@@ -56,14 +55,12 @@ def register():
         if not username or not password:
             return jsonify({'error': 'Username and password are required'}), 400
         
-        # Проверяем существование пользователя
         with open(USERS_FILE, 'r') as f:
             reader = csv.DictReader(f)
             for row in reader:
                 if row['username'] == username:
                     return jsonify({'error': 'Username already exists'}), 400
         
-        # Добавляем пользователя
         with open(USERS_FILE, 'a', newline='') as f:
             writer = csv.writer(f)
             writer.writerow([username, password])
@@ -73,7 +70,6 @@ def register():
         print(f"Registration error: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
-# Работа с инцидентами
 @app.route('/incidents', methods=['GET'])
 @login_required
 def get_incidents():
@@ -90,7 +86,6 @@ def add_incident():
     data = request.get_json()
     auth = request.authorization
     
-    # Генерируем ID (просто увеличиваем максимальный существующий)
     incident_id = 1
     with open(INCIDENTS_FILE, 'r') as f:
         reader = csv.DictReader(f)
@@ -105,7 +100,7 @@ def add_incident():
         'severity': data.get('severity', 'medium'),
         'status': data.get('status', 'open'),
         'reporter': auth.username,
-        'created_at': data.get('created_at', '')  # В реальном приложении нужно использовать datetime
+        'created_at': data.get('created_at', '') 
     }
     
     with open(INCIDENTS_FILE, 'a', newline='') as f:
@@ -127,14 +122,12 @@ def add_incident():
 def update_incident(incident_id):
     data = request.get_json()
     
-    # Читаем все инциденты
     incidents = []
     with open(INCIDENTS_FILE, 'r') as f:
         reader = csv.DictReader(f)
         for row in reader:
             incidents.append(row)
     
-    # Находим и обновляем инцидент
     updated = False
     for incident in incidents:
         if int(incident['id']) == incident_id:
@@ -148,7 +141,6 @@ def update_incident(incident_id):
     if not updated:
         return jsonify({'error': 'Incident not found'}), 404
     
-    # Перезаписываем файл
     with open(INCIDENTS_FILE, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['id', 'title', 'description', 'severity', 'status', 'reporter', 'created_at'])
