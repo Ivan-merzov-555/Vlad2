@@ -1,2 +1,4 @@
 id,title,description,severity,status,reporter,created_at
-1,123,123,medium,open,123,
+1,Сервер упал (исправлено),1232,low,resolved,123,
+2,Новый тестовый инцидент,test,low,open,Vlad88,
+3,Сервер упал,Произошёл сбой в работе сервера,low,open,test_user,
